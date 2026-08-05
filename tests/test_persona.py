@@ -22,8 +22,10 @@ def test_prompt_block_contains_key_fields() -> None:
     loader = PersonaLoader(PERSONAS_DIR)
     p = loader.load("default")
     block = p.to_prompt_block()
-    assert "当前人格" in block
+    # default.yaml 是沉浸式角色卡，渲染标题为"角色扮演指令"
+    assert "角色扮演指令" in block
     assert "小R" in block
+    # 语气信息来自 style.tone（渲染为"整体语气：…"）
     assert "语气" in block
 
 

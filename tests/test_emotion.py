@@ -72,9 +72,15 @@ def test_all_dims_present() -> None:
 
 
 def test_to_prompt_context_includes_all_dims() -> None:
-    """prompt 上下文文本应包含所有维度。"""
+    """7 个情绪维度都应影响情境化 prompt 文本。
+
+    新版 to_prompt_context 是情境描写（非裸数字），
+    因此验证每个维度拉满时都会产生对应描述。
+    """
     eng = EmotionEngine()
+    # 全部维度拉满，验证每个维度都会产生情境提示
+    eng.load_state("s6", {d: 90 for d in EMOTION_DIMS})
     ctx = eng.to_prompt_context("s6")
-    for dim in EMOTION_DIMS:
-        assert dim in ctx
-    assert "情绪状态" in ctx
+    assert ctx.startswith("[此刻的心境]")
+    for cue in ("心情", "难过", "困", "生气", "害羞", "担心", "想聊天"):
+        assert cue in ctx
