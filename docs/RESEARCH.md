@@ -60,6 +60,28 @@
 ## 五、执行状态追踪
 
 - [x] 2026-08-05 调研完成（微信 / jcodemunch-mcp / 生图模型）
-- [ ] 生图 POC：diffusers + Anything-v5 实测出图
-- [ ] jcodemunch-mcp 小范围索引实测
-- [ ] 微信通道：暂缓
+- [x] 生图 POC：Anything-v5 + diffusers 实测出图成功
+      → 20 步 512px 生成 **3.1s**，峰值显存 **2.61GB / 8GB**，图片 .tmp/poc_anything_v5.png
+      → 首次需下载 ~2GB 权重（hf-mirror，约 15 分钟），之后走本地缓存
+      → 结论：生图可行，后续集成 diffusers 到 rolematrix/tools/（小R 自动出图）
+- [x] jcodemunch-mcp POC：索引 + 检索验证成功
+      → rolematrix 包 322 符号索引约 0.45s；search_symbols 精确返回符号(file/line/signature)
+      → 关键配置（本地已设置，换机需重配）：
+        1. `tool_surface: "full"`（默认 counter 只暴露 6 个前门工具）— 已写入
+           C:\Users\13261\.code-index\config.jsonc（serve 读取的全局配置）
+           与项目 .jcodemunch.jsonc（双重保险）
+        2. MCP serve 与 CLI 的索引存储不同（git vs local identity），
+           首次需在 MCP 会话内调用 index_folder(path=...) 建索引
+        3. `server_output: "raw"` 让结果输出明文 JSON（adaptive 会 MUNCH 压缩）
+      → 结论：可用（个人/非商用免费），接入 Reasonix 时注册为 stdio MCP server
+- [ ] 微信通道：暂缓（风险高，无官方接口）
+- [ ] 生图集成进 rolematrix（diffusers 封装为 tools/image_gen.py + 小R 决策触发）
+- [ ] jcodemunch-mcp 注册进 Reasonix MCP 配置（个人用途）
+
+## 六、本地环境变更（不入库，仅本机）
+
+- 新增 Python 依赖：`diffusers`（生图）、`jcodemunch-mcp`（代码索引）
+- 修改 `C:\Users\13261\.code-index\config.jsonc`：tool_surface counter→full
+- 修改 `D:\RoleMatrix\.code-index\config.jsonc`：tool_surface counter→full
+- 新增 `D:\RoleMatrix\.jcodemunch.jsonc`（入库）：tool_surface=full + server_output=raw
+- 生成图片 `.tmp/poc_anything_v5.png`（不入库）

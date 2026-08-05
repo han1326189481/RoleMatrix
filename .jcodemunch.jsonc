@@ -1,0 +1,10 @@
+// jcodemunch-mcp 项目级配置（覆盖全局 ~/.code-index/config.jsonc）
+// 说明 1：默认 tool_surface="counter" 只向 MCP 客户端暴露 6 个"前门"工具，
+//  检索工具需按需调度。本配置改为 "full"，list_tools 直接暴露全部工具 schema。
+// 说明 2：server_output="raw" 让工具结果始终输出明文 JSON（adaptive 会对大结果
+//  用 MUNCH 压缩编码，AI 客户端不一定能解码）。
+{
+  "version": "1.108.241",
+  "tool_surface": "full",
+  "server_output": "raw"
+}
