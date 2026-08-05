@@ -149,6 +149,11 @@ async def chat(req: ChatRequest) -> ChatResponse:
     persona_block = persona.to_prompt_block()
     emotion_block = rt.emotion.to_prompt_context(session)
     system_prompt = f"{persona_block}\n\n{emotion_block}"
+    # 注入长期记忆（profile/long/daily 三层，无记忆时为空）
+    from ..memory import build_memory_context
+    memory_block = await build_memory_context(session)
+    if memory_block:
+        system_prompt += memory_block
 
     # 2. 选择 provider 和模型
     # 图片始终走本地（DeepSeek-V4-Flash 不支持图片，双层模式也不处理图片）

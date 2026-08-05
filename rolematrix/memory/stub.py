@@ -1,20 +1,18 @@
-"""记忆引擎 P1 实现。
+"""记忆引擎：订阅事件总线，写入四层记忆（session/daily/long/profile）。
 
-订阅事件总线：
+事件订阅（由 register_memory_handlers 在 Runtime 初始化时接通）：
 - message.received: 收到用户消息 → 写入 session 层记忆
-- message.sent: 回复发出 → 写入 session 层记忆 + 触发 long 层摘要（P2）
+- message.sent: 回复发出 → 写入 session 层记忆
 
-四层记忆：
-- session: 当前会话原始消息流（最近 N 条）
-- daily: 跨会话的当日摘要（P2）
-- long: 长期事实/偏好（P2）
-- profile: 用户画像（P2）
+daily/long/profile 三层由 MemoryManager（memory/manager.py）管理：
+- consolidate（心跳触发或 HTTP API）生成当日摘要与长期事实
+- add_fact / HTTP /memory/note 显式写入画像与事实
 """
 from __future__ import annotations
 
 from ..eventbus import Event, bus
 from ..logger import get_logger
-from ..storage import insert_memory_item
+from .manager import get_memory_manager
 
 log = get_logger("memory.store")
 
@@ -26,28 +24,20 @@ async def on_message_received(event: Event) -> None:
     prompt = p.get("prompt", "")
     if not prompt:
         return
-    try:
-        await insert_memory_item(
-            session_key=session_key,
-            layer="session",
-            role="user",
-            content=prompt,
-            metadata={
-                "channel": p.get("channel"),
-                "sender_id": p.get("sender_id"),
-                "persona": p.get("persona"),
-            },
-        )
-        log.debug(
-            "[记忆] 写入 session user msg session=%s len=%d",
-            session_key, len(prompt),
-        )
-    except Exception as e:  # noqa: BLE001
-        log.error("[记忆] 写入用户消息失败: %s", e)
+    await get_memory_manager().record_message(
+        session_key,
+        role="user",
+        content=prompt,
+        metadata={
+            "channel": p.get("channel"),
+            "sender_id": p.get("sender_id"),
+            "persona": p.get("persona"),
+        },
+    )
 
 
 async def on_message_sent(event: Event) -> None:
-    """回复发出：写入 session 层记忆。P2 触发 long 层摘要抽取。"""
+    """回复发出：写入 session 层记忆。"""
     p = event.payload
     session_key = p.get("session_key") or "_default"
     texts = p.get("assistant_texts", []) or []
@@ -57,20 +47,12 @@ async def on_message_sent(event: Event) -> None:
     content = "\n".join(str(t) for t in texts if t)
     if not content:
         return
-    try:
-        await insert_memory_item(
-            session_key=session_key,
-            layer="session",
-            role="assistant",
-            content=content,
-            metadata={"model": p.get("model")},
-        )
-        log.debug(
-            "[记忆] 写入 session assistant msg session=%s len=%d",
-            session_key, len(content),
-        )
-    except Exception as e:  # noqa: BLE001
-        log.error("[记忆] 写入助手回复失败: %s", e)
+    await get_memory_manager().record_message(
+        session_key,
+        role="assistant",
+        content=content,
+        metadata={"model": p.get("model")},
+    )
 
 
 def register_memory_handlers() -> None:

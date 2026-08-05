@@ -169,7 +169,7 @@ async def query_session_memory(
             """
             SELECT * FROM memory_items
             WHERE session_key = ? AND layer = 'session'
-            ORDER BY created_at DESC LIMIT ?
+            ORDER BY created_at DESC, id DESC LIMIT ?
             """,
             (session_key, limit),
         )
@@ -189,15 +189,28 @@ async def query_long_memory(
     session_key: str, limit: int = 5
 ) -> list[dict[str, Any]]:
     """查询长期记忆（daily/long 层），按时间倒序。"""
+    return await query_memory_items(session_key, ["daily", "long"], limit=limit)
+
+
+async def query_memory_items(
+    session_key: str, layers: list[str], limit: int = 10
+) -> list[dict[str, Any]]:
+    """通用记忆查询：按 session + 任意层组合，按时间倒序返回。
+
+    供记忆分层管理（MemoryManager）复用。
+    """
+    if not layers:
+        return []
+    placeholders = ",".join("?" for _ in layers)
     async with aiosqlite.connect(_resolve_db_path()) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
-            """
+            f"""
             SELECT * FROM memory_items
-            WHERE session_key = ? AND layer IN ('daily', 'long')
-            ORDER BY created_at DESC LIMIT ?
+            WHERE session_key = ? AND layer IN ({placeholders})
+            ORDER BY created_at DESC, id DESC LIMIT ?
             """,
-            (session_key, limit),
+            (session_key, *layers, limit),
         )
         rows = await cursor.fetchall()
     result = [dict(row) for row in rows]

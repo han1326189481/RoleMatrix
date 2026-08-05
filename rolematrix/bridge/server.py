@@ -28,6 +28,13 @@ class AssignRequest(BaseModel):
     persona: str
 
 
+class MemoryNoteRequest(BaseModel):
+    session_key: str
+    layer: str  # daily | long | profile
+    content: str
+    metadata: dict | None = None
+
+
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -102,6 +109,40 @@ def create_app() -> FastAPI:
         rt = get_runtime()
         state = rt.emotion.apply_decay(session_key)
         return state.as_vector()
+
+    # ---- 四层记忆管理端点 ----
+    @app.get("/memory/{session_key}")
+    async def get_memory(session_key: str) -> dict:
+        """查看一个 session 的四层记忆与注入文本预览。"""
+        from ..memory import get_memory_manager
+        mgr = get_memory_manager()
+        return {
+            "session": await mgr.query_session(session_key, limit=20),
+            "daily": await mgr.query_daily(session_key),
+            "long": await mgr.query_long(session_key),
+            "profile": await mgr.query_profile(session_key),
+            "context": await mgr.build_memory_context(session_key),
+        }
+
+    @app.post("/memory/note")
+    async def memory_note(body: MemoryNoteRequest) -> dict:
+        """显式写入一条事实/画像（daily/long/profile 层，自动去重）。"""
+        from ..memory import get_memory_manager
+        mgr = get_memory_manager()
+        try:
+            added = await mgr.add_fact(
+                body.session_key, body.layer, body.content, metadata=body.metadata
+            )
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "added": added}
+
+    @app.post("/memory/consolidate/{session_key}")
+    async def memory_consolidate(session_key: str) -> dict:
+        """触发当日对话整理：生成 daily 摘要 + 提取 long 事实。"""
+        from ..memory import get_memory_manager
+        mgr = get_memory_manager()
+        return await mgr.consolidate(session_key)
 
     # ---- 小R 私人收藏库管理端点（人工审核用）----
     @app.get("/collection/list")

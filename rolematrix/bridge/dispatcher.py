@@ -91,7 +91,12 @@ async def handle_before_prompt_build(req: HookRequest) -> dict:
     persona_block = persona.to_prompt_block()
     emotion_block = rt.emotion.to_prompt_context(session)
 
-    # 异步通知记忆模块（P0 仅广播事件，不实际存储）
+    # 注入长期记忆（profile/long/daily，无记忆时为空）
+    from ..memory import build_memory_context
+    memory_block = await build_memory_context(session)
+    persona_block = persona_block + memory_block
+
+    # 异步通知记忆模块（写入 session 层）
     await rt.bus.publish(
         Event(
             "message.received",
@@ -123,6 +128,14 @@ async def handle_heartbeat_prompt_contribution(req: HookRequest) -> dict:
 
     if state.want_chat < 50:
         return {}  # 不想聊天，不贡献
+
+    # 每日记忆整理：今天首次心跳时尝试把当天对话 consolidate 成摘要+事实
+    # （无当天消息时 consolidate 内部直接跳过；失败不影响主流程）
+    try:
+        from ..memory import get_memory_manager
+        await get_memory_manager().consolidate(session)
+    except Exception as e:  # noqa: BLE001
+        log.warning("心跳 consolidate 失败（不影响主流程）: %s", e)
 
     persona = rt.persona_registry.get(req.ctx.agent_id)
     greeting = persona.greeting or "在吗？"
@@ -181,6 +194,11 @@ async def handle_before_agent_reply(req: HookRequest) -> dict:
     persona_block = persona.to_prompt_block()
     emotion_block = rt.emotion.to_prompt_context(session)
     system_prompt = f"{persona_block}\n\n{emotion_block}"
+    # 注入长期记忆（profile/long/daily 三层，无记忆时为空）
+    from ..memory import build_memory_context
+    memory_block = await build_memory_context(session)
+    if memory_block:
+        system_prompt += memory_block
 
     # 会话历史（与 chat router 共享，保持 webchat/openclaw session 隔离）
     from .chat import _histories
