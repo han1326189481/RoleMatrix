@@ -37,6 +37,52 @@ _MAX_SEGMENT_CHARS = 60
 _MIN_SEGMENT_CHARS = 4
 
 
+async def _auto_collect_user_image(image_base64: str, session_key: str) -> None:
+    """收藏闭环：把用户发的图片（base64）自动存入收藏库。
+
+    失败仅记日志，绝不阻断对话主流程。
+    """
+    import base64
+    import tempfile
+
+    try:
+        header, _, b64 = image_base64.partition(",")
+        ext_map = {
+            "png": ".png", "jpeg": ".jpg", "jpg": ".jpg",
+            "gif": ".gif", "webp": ".webp",
+        }
+        ext = ".jpg"
+        header_lower = header.lower()
+        for key, value in ext_map.items():
+            if key in header_lower:
+                ext = value
+                break
+        data = base64.b64decode(b64 if b64 else image_base64)
+        if not data:
+            return
+        from ..tools.image_downloader import save_local_file
+
+        # base64 无法直接入库（insert_item 需要文件实体），写临时文件后转存
+        fd, tmp_path = tempfile.mkstemp(suffix=ext)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+            await save_local_file(
+                src_path=tmp_path,
+                source="user_image",
+                tags=[],
+                description="用户发送的图片",
+                session_key=session_key,
+            )
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+    except Exception as e:  # noqa: BLE001
+        log.warning("自动收藏用户图片失败 session=%s: %s", session_key, e)
+
+
 def split_reply(text: str) -> list[str]:
     """把一段长回复切成多段，模拟真人分次发送。
 
@@ -162,6 +208,8 @@ async def chat(req: ChatRequest) -> ChatResponse:
         provider_name = "ollama"
         model = req.model or settings.llm.local_vision_model
         mode = "single"  # 图片强制单层
+        # 收藏闭环：用户发的图片自动存入收藏库（失败仅日志，不阻断）
+        await _auto_collect_user_image(req.image_base64, session)
     else:
         provider_name = settings.llm.provider
         mode = settings.llm.mode

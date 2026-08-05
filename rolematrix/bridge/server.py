@@ -35,6 +35,13 @@ class MemoryNoteRequest(BaseModel):
     metadata: dict | None = None
 
 
+class CollectionFromUrlRequest(BaseModel):
+    url: str
+    tags: list[str] | None = None
+    description: str | None = None
+    session_key: str | None = None
+
+
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -148,9 +155,31 @@ def create_app() -> FastAPI:
     @app.get("/collection/list")
     async def list_collection(limit: int = 20) -> dict:
         """列出最近收藏（按时间倒序）。"""
-        from ..tools.collection_store import list_recent, count_items
+        from ..tools.collection_store import count_items, list_recent
         items = await list_recent(limit=limit)
         total = await count_items()
         return {"total": total, "items": items}
+
+    @app.get("/collection/search")
+    async def search_collection(tag: str, limit: int = 5) -> dict:
+        """按标签搜索收藏（send_meme 的查询接口，供排查用）。"""
+        from ..tools.collection_store import query_by_tag
+        return {"items": await query_by_tag(tag, limit=limit)}
+
+    @app.post("/collection/from-url")
+    async def collect_from_url(body: CollectionFromUrlRequest) -> dict:
+        """手动收藏一张图片 URL（小R 看到好看图时人工添加）。"""
+        from ..tools.image_downloader import download_and_save
+        result = await download_and_save(
+            url=body.url,
+            source="web_image",
+            tags=body.tags,
+            description=body.description,
+            session_key=body.session_key,
+        )
+        if result:
+            rel_path, file_hash = result
+            return {"ok": True, "file_path": rel_path, "file_hash": file_hash}
+        return {"ok": False, "error": "下载或保存失败（详见服务端日志）"}
 
     return app

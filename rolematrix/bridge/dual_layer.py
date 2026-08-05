@@ -14,13 +14,21 @@
 """
 from __future__ import annotations
 
-import json
+import re
+from pathlib import Path
 from typing import Any
 
 from ..config import get_settings
 from ..llm import get_provider
-from ..llm.brain_provider import BrainProvider, get_brain
+from ..llm.brain_provider import get_brain
 from ..logger import get_logger
+from ..tools.collection_store import (
+    increment_usage,
+    insert_search_history,
+    query_by_tag,
+)
+from ..tools.image_downloader import download_and_save, save_local_file
+from ..tools.web_search import search as web_search
 
 log = get_logger("bridge.dual_layer")
 
@@ -157,8 +165,6 @@ async def dual_chat(
     search_query = brain_plan.get("web_search_query")
     if search_query and isinstance(search_query, str) and search_query.strip():
         try:
-            from ..tools.web_search import search as web_search
-            from ..tools.collection_store import insert_search_history
             search_results = await web_search(
                 query=search_query.strip(),
                 session_key=session_key or "default",
@@ -174,6 +180,20 @@ async def dual_chat(
                 log.warning("记录搜索历史失败: %s", e)
         except Exception as e:
             log.warning("web search 执行失败: %s", e)
+
+    # 2.5 消费大脑的收藏/表情决策（save_to_collection / send_meme）
+    # 结果写回 brain_plan（_saved_collection / _meme），供上层使用/日志
+    save_info = brain_plan.get("save_to_collection")
+    if save_info and isinstance(save_info, dict):
+        saved = await _handle_save_to_collection(save_info, session_key)
+        if saved:
+            brain_plan["_saved_collection"] = saved
+
+    meme_info = brain_plan.get("send_meme")
+    if meme_info and isinstance(meme_info, dict):
+        meme = await _handle_send_meme(meme_info, session_key)
+        if meme:
+            brain_plan["_meme"] = meme
 
     # 3. 嘴巴生成（用大脑策略 + 搜索结果增强 system prompt）
     mouth_system = build_mouth_system_prompt(
@@ -195,6 +215,92 @@ async def dual_chat(
         raise  # 上层 chat.py 会降级到 Ollama
 
     return reply, brain_plan
+
+
+# ============================================================
+# 收藏闭环：消费大脑的 save_to_collection / send_meme 决策
+# ============================================================
+
+
+def _split_tags(tags: Any) -> list[str]:
+    """把大脑输出的 tags（可能是 list 或逗号分隔字符串）归一化为 list。"""
+    if isinstance(tags, list):
+        return [str(t).strip() for t in tags if str(t).strip()]
+    if isinstance(tags, str):
+        return [t.strip() for t in re.split(r"[,，;；]", tags) if t.strip()]
+    return []
+
+
+async def _handle_save_to_collection(
+    save_info: dict[str, Any], session_key: str | None
+) -> dict[str, Any] | None:
+    """执行大脑的 save_to_collection 决策：URL/本地路径 → 收藏库。
+
+    Args:
+        save_info: {source, tags, reason}
+            source 可以是 http(s) URL 或本地文件路径
+        session_key: 来源会话
+
+    Returns:
+        {"file_path": ..., "tags": [...]}，失败返回 None
+    """
+    source = str(save_info.get("source") or "").strip()
+    tags = _split_tags(save_info.get("tags"))
+    desc = str(save_info.get("reason") or save_info.get("description") or "").strip()
+    if not source:
+        log.warning("save_to_collection 缺少 source，跳过")
+        return None
+    try:
+        if source.startswith(("http://", "https://")):
+            result = await download_and_save(
+                url=source, source="web_image", tags=tags,
+                description=desc, session_key=session_key,
+            )
+        elif Path(source).exists():
+            result = await save_local_file(
+                src_path=source, source="user_image", tags=tags,
+                description=desc, session_key=session_key,
+            )
+        else:
+            log.warning("save_to_collection 无效 source: %r", source)
+            return None
+        if result:
+            rel_path, file_hash = result
+            log.info("大脑决策已收藏: %s tags=%s", rel_path, tags)
+            return {"file_path": rel_path, "tags": tags, "file_hash": file_hash}
+    except Exception as e:  # noqa: BLE001
+        log.warning("save_to_collection 执行失败: %s", e)
+    return None
+
+
+async def _handle_send_meme(
+    meme_info: dict[str, Any], session_key: str | None
+) -> dict[str, Any] | None:
+    """执行大脑的 send_meme 决策：按 tag 查收藏的表情包。
+
+    Args:
+        meme_info: {tag, reason}
+        session_key: 来源会话
+
+    Returns:
+        {"file_path": ..., "tag": ..., "usage_count": ...}，未命中返回 None
+    """
+    tag = str(meme_info.get("tag") or "").strip()
+    if not tag:
+        return None
+    try:
+        items = await query_by_tag(tag, limit=1)
+        if not items:
+            log.info("send_meme 未找到 tag=%s 的表情包（收藏库为空或标签不匹配）", tag)
+            return None
+        item = items[0]
+        await increment_usage(item["id"])
+        new_count = (item.get("usage_count") or 0) + 1
+        log.info("send_meme 命中 tag=%s -> %s (第 %d 次使用)", tag, item["file_path"], new_count)
+        return {"file_path": item["file_path"], "tag": tag, "usage_count": new_count}
+    except Exception as e:  # noqa: BLE001
+        log.warning("send_meme 执行失败: %s", e)
+    return None
 
 
 def reset_brain_singleton() -> None:

@@ -22,7 +22,7 @@ async def build_memory_context(session_key: str) -> str:
 
 __all__ = [
     "MemoryManager",
-    "get_memory_manager",
     "build_memory_context",
+    "get_memory_manager",
     "register_memory_handlers",
 ]
