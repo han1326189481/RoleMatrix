@@ -117,6 +117,9 @@ def _parse_brain_json(text: str) -> dict[str, Any]:
     宽容处理：即使缺少 reply_plan 字段，只要包含任意有效业务字段
     （web_search_query/save_to_collection/send_meme/emotion_delta/memory_recall），
     也接受并自动补全默认 reply_plan，让新增的 web search 等能力能正常工作。
+
+    空对象 '{}' 不是失败：大脑训练时被告知"日常闲聊时所有字段填 null"，
+    因此 '{}' 是符合预期的"无特别决策"，归一化为默认计划（带 _fallback 标记）。
     """
     if not text:
         return None
@@ -128,9 +131,14 @@ def _parse_brain_json(text: str) -> dict[str, Any]:
         return None
     try:
         plan = json.loads(cleaned[s : e + 1])
-        # 空 {} 或非 dict 视为异常
-        if not isinstance(plan, dict) or not plan:
+        # 非 dict 视为异常
+        if not isinstance(plan, dict):
             return None
+        # 空对象：大脑认为"日常闲聊，无需特别决策"（训练时被告知新字段填 null），
+        # 归一化为默认计划而不是判失败，确保双层模式继续走嘴巴层正常回复。
+        if not plan:
+            log.info("大脑输出空决策 '{}'，按日常闲聊处理")
+            return _default_plan("大脑输出空决策（日常闲聊）")
 
         # 容错：如果缺 reply_plan 但有其他业务字段，自动补全默认 reply_plan
         # （让大脑新增的 web_search_query 等字段能正常工作）
@@ -222,6 +230,11 @@ class BrainProvider:
         Returns:
             决策 JSON dict。出错时返回带 _fallback 标记的默认策略。
         """
+        user_msg = (user_msg or "").strip()
+        if not user_msg:
+            # 空消息不加载 5GB 模型，直接返回默认计划
+            return _default_plan("用户消息为空")
+
         await self._ensure_loaded()
 
         # 组装 messages
