@@ -1,0 +1,28 @@
+{
+  "name": "@rolematrix/openclaw-bridge",
+  "version": "0.1.0",
+  "description": "Bridge plugin: forwards OpenClaw hooks to RoleMatrix Persona Runtime (Python FastAPI)",
+  "type": "module",
+  "dependencies": {
+    "typebox": "1.1.39"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.24-beta.2"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.mjs"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2",
+      "minGatewayVersion": "2026.3.24-beta.2"
+    },
+    "build": {
+      "openclawVersion": "2026.3.24-beta.2",
+      "pluginSdkVersion": "2026.3.24-beta.2"
+    }
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

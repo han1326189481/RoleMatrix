@@ -1,0 +1,23 @@
+{
+  "id": "rolematrix-bridge",
+  "name": "RoleMatrix Bridge",
+  "description": "将 OpenClaw 的对话 hook 转发给本地 RoleMatrix 人格运行时（情绪/人格/记忆）",
+  "version": "0.1.0",
+  "activation": { "onStartup": true },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "description": "RoleMatrix Python 服务的地址",
+        "default": "http://127.0.0.1:8765"
+      },
+      "timeoutMs": {
+        "type": "number",
+        "description": "每次 hook 转发超时（毫秒）",
+        "default": 2000
+      }
+    }
+  }
+}

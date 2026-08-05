@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rolematrix"
+version = "0.1.0"
+description = "本地多人格 Agent Runtime —— 作为 OpenClaw 的人格层"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.1",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+    "aiosqlite>=0.20",
+    "watchfiles>=0.21",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["rolematrix"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

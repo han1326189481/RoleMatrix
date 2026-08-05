@@ -1,0 +1,112 @@
+[
+  {
+    "user": "我的电脑突然蓝屏了怎么办啊",
+    "brain_ok": true,
+    "plan": {
+      "emotion_delta": {
+        "happy": 1,
+        "tired": 0,
+        "shy": 0,
+        "want_chat": 1
+      },
+      "memory_recall": null,
+      "reply_plan": {
+        "tone": "调皮撒娇",
+        "points": [
+          "回应对方的求助",
+          "表达愿意帮忙的态度"
+        ],
+        "length": "short"
+      }
+    },
+    "reply": "别慌别慌！重启试试看~ 不行再叫我帮你查！",
+    "total_time": 6.2
+  },
+  {
+    "user": "今天好累啊，写了一整天代码头都要炸了",
+    "brain_ok": true,
+    "plan": {
+      "emotion_delta": {
+        "happy": 1,
+        "tired": 0,
+        "shy": 0,
+        "want_chat": 1
+      },
+      "memory_recall": null,
+      "reply_plan": {
+        "tone": "调皮撒娇",
+        "points": [
+          "回应对方的累和抱怨",
+          "表达关心并安慰"
+        ],
+        "length": "short"
+      }
+    },
+    "reply": "辛苦啦宝贝~ 快歇歇，我陪你聊天充充电！",
+    "total_time": 6.7
+  },
+  {
+    "user": "你在干嘛呢",
+    "brain_ok": true,
+    "plan": {
+      "emotion_delta": {
+        "happy": 1,
+        "want_chat": 0
+      },
+      "memory_recall": null,
+      "reply_plan": {
+        "tone": "调皮撒娇",
+        "points": [
+          "回应对方询问，表示自己状态还可以",
+          "表达想念但用玩笑缓和气氛"
+        ],
+        "length": "short"
+      }
+    },
+    "reply": "在想你呀~ 不过放心，我还能好好吃饭睡觉，没想瘦。",
+    "total_time": 5.9
+  },
+  {
+    "user": "给我讲讲你今天在学校发生的事情吧",
+    "brain_ok": true,
+    "plan": {
+      "emotion_delta": {
+        "happy": 1,
+        "want_chat": 0,
+        "shy": 0,
+        "tired": -1
+      },
+      "memory_recall": null,
+      "reply_plan": {
+        "tone": "日常闲聊",
+        "points": [
+          "回应对方关心，但转移话题到作业多",
+          "表达想早睡但没办法"
+        ],
+        "length": "short"
+      }
+    },
+    "reply": "今天没什么特别的 就是作业好多 想早睡都不行",
+    "total_time": 8.7
+  },
+  {
+    "user": "你是谁啊",
+    "brain_ok": true,
+    "plan": {
+      "emotion_delta": {
+        "happy": 1,
+        "want_chat": 0
+      },
+      "memory_recall": null,
+      "reply_plan": {
+        "tone": "调皮撒娇",
+        "points": [
+          "回应对方询问，但转移话题到自己",
+          "用轻松语气结束简短对话"
+        ],
+        "length": "short"
+      }
+    },
+    "error": "DeepSeek API 不可达: Server disconnected without sending a response."
+  }
+]

@@ -1,0 +1,43 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.env
+# 防止误放密钥文件
+*密钥*
+*secret*
+*api_key*
+*apikey*
+*.db
+*.sqlite
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+data/
+# 本地 Python 安装目录（运行时下载，不纳入仓库）
+.tmp/
+# 本地配置（含个人偏好，不入库；只保留 config.example.yaml）
+config/config.yaml
+# 参考用的外部仓库（不纳入本项目）
+_ref/
+wechaty-main/
+# OpenClaw 本地配置（含 credentials 密钥、会话数据，禁止入库）
+.openclaw/
+# 模型与运行时（大文件，不入库）
+models/
+tools/
+bridge-plugin/node_modules/
+# 下载/推理缓存
+.hf_cache/
+.ollama/
+.pip_cache/
+.cache/
+.code-index/
+.xiaor_collection/
+# 运行/训练日志
+*.log
+# 本工具的项目元数据
+.reasonix/

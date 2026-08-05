@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoleMatrix 聊天测试</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #f5f5f5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: #2c3e50;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 { font-size: 18px; font-weight: 500; }
+  header .status { font-size: 12px; opacity: 0.8; }
+  #main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  #chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #ddd;
+  }
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .msg {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .msg.user { align-items: flex-end; }
+  .msg.assistant { align-items: flex-start; }
+  .msg .bubble {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .msg .bubble + .bubble {
+    margin-top: 6px;
+  }
+  .msg.user .bubble {
+    background: #3498db;
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.assistant .bubble {
+    background: white;
+    color: #2c3e50;
+    border: 1px solid #e0e0e0;
+    border-bottom-left-radius: 4px;
+  }
+  .msg .bubble img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    margin-top: 6px;
+    display: block;
+  }
+  .msg .meta {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+  }
+  .loading .bubble::after {
+    content: "●●●";
+    animation: blink 1.2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:1} }
+  .typing .bubble::after {
+    content: "▎";
+    animation: blink 0.8s infinite;
+    color: #95a5a6;
+    margin-left: 2px;
+  }
+  .typing .bubble {
+    border-color: #bdc3c7 !important;
+  }
+  #input-area {
+    padding: 12px 16px;
+    background: white;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  #msg-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+  }
+  #msg-input:focus { border-color: #3498db; }
+  #image-btn {
+    background: #ecf0f1;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #image-btn:hover { background: #d5dbdb; }
+  #send-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #send-btn:hover { background: #2980b9; }
+  #send-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+  #preview-img {
+    display: none;
+    max-height: 60px;
+    max-width: 60px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+  }
+  #sidebar {
+    width: 240px;
+    background: white;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  #sidebar h3 {
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .emo-dim {
+    margin-bottom: 10px;
+  }
+  .emo-dim .label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #2c3e50;
+    margin-bottom: 3px;
+  }
+  .emo-dim .bar {
+    height: 6px;
+    background: #ecf0f1;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .emo-dim .fill {
+    height: 100%;
+    background: #3498db;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  #reset-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 8px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  #reset-btn:hover { background: #c0392b; }
+  .error {
+    color: #e74c3c;
+    font-size: 12px;
+    padding: 8px;
+    background: #fdf2f2;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>RoleMatrix 聊天测试</h1>
+  <div class="status" id="status">连接中...</div>
+</header>
+<div id="main">
+  <div id="chat-area">
+    <div id="messages"></div>
+    <div id="input-area">
+      <button id="image-btn" title="发送图片">📎</button>
+      <img id="preview-img" alt="预览">
+      <input type="text" id="msg-input" placeholder="输入消息..." autocomplete="off">
+      <button id="send-btn">发送</button>
+    </div>
+    <input type="file" id="file-input" accept="image/*" style="display:none">
+  </div>
+  <div id="sidebar">
+    <h3>当前情绪</h3>
+    <div id="emotion-panel"></div>
+    <button id="reset-btn">清空会话</button>
+  </div>
+</div>
+
+<script>
+const API = "";  // 同源
+let pendingImage = null;
+let sending = false;
+
+const msgInput = document.getElementById("msg-input");
+const sendBtn = document.getElementById("send-btn");
+const messages = document.getElementById("messages");
+const fileInput = document.getElementById("file-input");
+const imageBtn = document.getElementById("image-btn");
+const previewImg = document.getElementById("preview-img");
+const status = document.getElementById("status");
+const emotionPanel = document.getElementById("emotion-panel");
+const resetBtn = document.getElementById("reset-btn");
+
+const EMO_LABELS = {
+  happy: "开心", sad: "难过", tired: "疲倦", angry: "生气",
+  shy: "害羞", worried: "担心", want_chat: "想聊天"
+};
+
+function renderEmotion(emo) {
+  emotionPanel.innerHTML = "";
+  for (const [k, label] of Object.entries(EMO_LABELS)) {
+    const v = emo[k] ?? 0;
+    const div = document.createElement("div");
+    div.className = "emo-dim";
+    div.innerHTML = `
+      <div class="label"><span>${label}</span><span>${v}</span></div>
+      <div class="bar"><div class="fill" style="width:${v}%"></div></div>
+    `;
+    emotionPanel.appendChild(div);
+  }
+}
+
+function addMessage(role, text, imageData) {
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  if (text) bubble.textContent = text;
+  if (imageData) {
+    const img = document.createElement("img");
+    img.src = imageData;
+    bubble.appendChild(img);
+  }
+  div.appendChild(bubble);
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+// 打字速度参数
+const TYPE_MS_PER_CHAR = 60;   // 单字打字耗时（ms）
+const SEG_GAP_MIN = 600;       // 段间最小间隔（ms），模拟"思考/停顿"
+const SEG_GAP_PER_CHAR = 20;   // 段间额外间隔，按段长加权
+const TYPE_MAX = 2500;         // 单段打字最长延迟（避免太长卡死）
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// 逐字显示一段文字到 bubble
+async function typeText(bubble, text) {
+  bubble.textContent = "";
+  for (let i = 1; i <= text.length; i++) {
+    bubble.textContent = text.slice(0, i);
+    messages.scrollTop = messages.scrollHeight;
+    const delay = Math.min(TYPE_MS_PER_CHAR, TYPE_MAX / Math.max(text.length, 1));
+    await sleep(delay);
+  }
+}
+
+// 按 segments 顺序分段显示，模拟真实分次发送
+async function playSegments(container, segments) {
+  // 清掉所有子 bubble
+  container.querySelectorAll(".bubble").forEach(b => b.remove());
+  container.classList.remove("loading");
+  container.classList.add("typing");
+
+  for (let i = 0; i < segments.length; i++) {
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    container.appendChild(bubble);
+
+    // 在已有段后追加新段前，先有个停顿（首段除外）
+    if (i > 0) {
+      const prev = segments[i - 1] || "";
+      const gap = SEG_GAP_MIN + Math.min(prev.length * SEG_GAP_PER_CHAR, 1500);
+      await sleep(gap);
+    }
+
+    await typeText(bubble, segments[i]);
+    messages.scrollTop = messages.scrollHeight;
+  }
+  container.classList.remove("typing");
+}
+
+async function send() {
+  const text = msgInput.value.trim();
+  if (!text && !pendingImage) return;
+  if (sending) return;
+  sending = true;
+  sendBtn.disabled = true;
+
+  // 显示用户消息
+  addMessage("user", text, pendingImage);
+
+  // loading 占位（保持一个 .msg 容器，后面把气泡替换为多段）
+  const loading = addMessage("assistant", "");
+  loading.classList.add("loading");
+
+  const payload = { message: text };
+  if (pendingImage) {
+    payload.image_base64 = pendingImage;
+    pendingImage = null;
+    previewImg.style.display = "none";
+  }
+
+  msgInput.value = "";
+
+  try {
+    const resp = await fetch(API + "/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+
+    // 优先用后端切分的 segments；若没有则退回单段 reply
+    const segs = (data.segments && data.segments.length) ? data.segments : [data.reply || ""];
+    await playSegments(loading, segs);
+
+    renderEmotion(data.emotion);
+    status.textContent = `${data.persona.name || "AI"} · ${data.model_used} · ${data.duration_ms}ms`;
+    messages.scrollTop = messages.scrollHeight;
+  } catch (e) {
+    loading.classList.remove("loading", "typing");
+    loading.querySelector(".bubble").textContent = "❌ " + e.message;
+    loading.querySelector(".bubble").style.color = "#e74c3c";
+  } finally {
+    sending = false;
+    sendBtn.disabled = false;
+    msgInput.focus();
+  }
+}
+
+sendBtn.addEventListener("click", send);
+msgInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+
+imageBtn.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    pendingImage = ev.target.result;
+    previewImg.src = pendingImage;
+    previewImg.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+  fileInput.value = "";
+});
+
+resetBtn.addEventListener("click", async () => {
+  if (!confirm("确定清空当前会话历史？")) return;
+  try {
+    await fetch(API + "/chat/reset?session_key=webchat", { method: "POST" });
+    messages.innerHTML = "";
+    status.textContent = "会话已重置";
+  } catch (e) {
+    alert("重置失败: " + e.message);
+  }
+});
+
+// 初始化：加载当前情绪
+async function init() {
+  try {
+    const resp = await fetch(API + "/emotion/webchat");
+    if (resp.ok) {
+      const emo = await resp.json();
+      renderEmotion(emo);
+      status.textContent = "已连接";
+    } else {
+      status.textContent = "情绪端点不可用";
+    }
+  } catch {
+    status.textContent = "连接失败";
+  }
+}
+init();
+</script>
+</body>
+</html>

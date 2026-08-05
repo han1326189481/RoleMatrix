@@ -1,0 +1,26 @@
+# RoleMatrix 配置示例 —— 复制为 config.yaml 后按需修改
+server:
+  host: "127.0.0.1"
+  port: 8765
+
+storage:
+  sqlite_path: "data/rolematrix.db"
+
+persona:
+  config_dir: "personas"
+  default_persona: "default"
+
+emotion:
+  # 情绪衰减半衰期（小时），值越大情绪维持越久
+  decay_halflife_hours: 24
+  initial:
+    happy: 50
+    sad: 0
+    tired: 20
+    angry: 0
+    shy: 10
+    worried: 0
+    want_chat: 60
+
+logging:
+  level: "INFO"
