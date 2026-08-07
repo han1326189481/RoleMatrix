@@ -64,6 +64,16 @@
       → 20 步 512px 生成 **3.1s**，峰值显存 **2.61GB / 8GB**，图片 .tmp/poc_anything_v5.png
       → 首次需下载 ~2GB 权重（hf-mirror，约 15 分钟），之后走本地缓存
       → 结论：生图可行，后续集成 diffusers 到 rolematrix/tools/（小R 自动出图）
+- [x] 小R 真人形象 LoRA 训练（2026-08-07）
+      → 数据：28 张真人照片（超分 4x 到 1024px+，清洗剔除 3 张模糊/无脸图 → 25 张）
+      → 基模：Realistic Vision v5.1（SD1.5，已固定到 models/base/RealisticVision_V5.1）
+      → 训练：rank 32 / alpha 64 / 512px center-crop / 1500 steps (2 epoch) / 10.5 分钟
+      → 产物：models/lora_xiaor_real_v1（触发词 xiaor，caption "photo of xiaor girl"）
+      → 评估（minicpm-v 原图对比）：有 LoRA 相似度 90/100（1 epoch 仅 60），效果显著
+      → 脚本：scripts/train_xiaor_real_lora.py / scripts/eval_xiaor_real_lora.py
+      → 注意：训练图在 data/lora_xiaor_real/（隐私，不入库，.gitignore 已含 data/）；
+        models/ 不入库（.gitignore），换机需重新训练或手动转移
+      → 已知限制：眼镜特征未学全（训练图戴眼镜占比不均），可用 caption 标注强化
 - [x] jcodemunch-mcp POC：索引 + 检索验证成功
       → rolematrix 包 322 符号索引约 0.45s；search_symbols 精确返回符号(file/line/signature)
       → 关键配置（本地已设置，换机需重配）：
