@@ -31,8 +31,8 @@ from rolematrix.logger import get_logger, setup_logging
 log = get_logger("train.xiaor_real")
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-IMAGE_DIR = Path(r"D:\RoleMatrix\data\lora_xiaor_real_v3\img")
-OUTPUT_DIR = Path(r"D:\RoleMatrix\models\lora_xiaor_real_v3")
+IMAGE_DIR = Path(r"D:\RoleMatrix\data\lora_xiaor_real_v4\img")
+OUTPUT_DIR = Path(r"D:\RoleMatrix\models\lora_xiaor_real_v4")
 RESOLUTION = 512
 LORA_RANK = 64
 LORA_ALPHA = 128

@@ -41,3 +41,7 @@ bridge-plugin/node_modules/
 *.log
 # 本工具的项目元数据
 .reasonix/
+reasonix.toml
+# 真人形象照（隐私，严禁入库）
+training basic/
+training basic_upscaled/
