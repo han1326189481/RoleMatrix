@@ -103,6 +103,17 @@
         （细节差距需更强信号：更多轮次 / IP-Adapter 锚点 / 出图滤镜）
       → 结论：SD1.5 的眼镜是 prompt 驱动属性，prompt 无 glasses 词则不画（正常行为），
         标准用法 = prompt 固定带 black thick-rimmed rectangular glasses（见 prompt guide v2）
+- [x] 数据集 v5（2026-08-07）：训练聚焦正脸+侧脸（用户指令：全身/生活照为灾区先剔除）
+      → 侧脸照重新识别：确认 minicpm-v 第一次识别不可信（侧脸4=夜间抓娃娃机、侧脸5=白天火车窗边，
+        与用户专业描述一致）；已用聚焦提问重建 6 张侧脸 caption
+      → v5 数据集 24 张（正脸5+侧脸5+新正脸+新侧脸 = 12 原图 + 12 脸部特写），
+        全身/生活照全部剔除（等用户补高清图）；特写用 opencv 人脸检测（侧脸 fallback 上部裁剪）
+      → caption 依用户专业描述：long straight slightly wavy hair, fluffy messy, bangs, side bangs
+      → 重训 v5：models/lora_xiaor_real_v5（rank 64 / 2200 steps / 13.2 分钟 / 24 张）
+      → 评估（minicpm-v）：正脸/生活类生成均 东亚✓ 20岁✓ 黑框眼镜✓ 层次碎发✓
+      → 侧脸样图：.tmp/xiaor_samples_v5_side/（抓娃娃机/火车窗边场景）
+      → 教训（v5 prompt 修正）：绝不能删 east asian 人种词、不能加 sharp/detailed 类欧美脸词；
+        v6 修正=保留 east asian + 年龄锚定 + caucasian negative，已验证不欧美化
 - [x] jcodemunch-mcp POC：索引 + 检索验证成功
       → rolematrix 包 322 符号索引约 0.45s；search_symbols 精确返回符号(file/line/signature)
       → 关键配置（本地已设置，换机需重配）：

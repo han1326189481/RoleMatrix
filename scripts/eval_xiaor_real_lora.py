@@ -14,13 +14,14 @@ import torch
 from diffusers import StableDiffusionPipeline
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v4"
+LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v5"
 OUT_DIR = Path(r"D:\RoleMatrix\.tmp\lora_eval")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# v4 具象特征前缀（与训练 caption 完全一致）
+# v5 特征前缀：保留 east asian 人种锚定 + 年龄锚定（v6 修正结论）
 FIXED = (
-    "little_r, young east asian woman, slender soft face, soft oval face, baby face, "
+    "little_r, young east asian woman, 20 years old, college student, "
+    "slender soft face, soft oval face, baby face, "
     "black thick-rimmed rectangular glasses, shaggy layered hair, wispy bangs, "
     "fair skin, petite, calm cool vibe"
 )
