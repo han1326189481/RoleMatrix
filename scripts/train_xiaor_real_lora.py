@@ -31,17 +31,17 @@ from rolematrix.logger import get_logger, setup_logging
 log = get_logger("train.xiaor_real")
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-IMAGE_DIR = Path(r"D:\RoleMatrix\data\lora_xiaor_real\img")
-OUTPUT_DIR = Path(r"D:\RoleMatrix\models\lora_xiaor_real_v1")
+IMAGE_DIR = Path(r"D:\RoleMatrix\data\lora_xiaor_real_v3\img")
+OUTPUT_DIR = Path(r"D:\RoleMatrix\models\lora_xiaor_real_v3")
 RESOLUTION = 512
-LORA_RANK = 32
-LORA_ALPHA = 64
+LORA_RANK = 64
+LORA_ALPHA = 128
 LEARNING_RATE = 1e-4
 BATCH_SIZE = 1
 GRAD_ACCUM = 4
-TOTAL_STEPS = 1500
-WARMUP_STEPS = 100
-REPEAT_PER_IMAGE = 30  # 每张图在 dataset 中重复次数（25 张 × 30 = 750/epoch，2 epoch = 1500 steps）
+TOTAL_STEPS = 2000
+WARMUP_STEPS = 150
+REPEAT_PER_IMAGE = 30  # 32 张 × 30 = 960/epoch，约 2 epoch = 1920 steps（上限 2000）
 SEED = 42
 
 
@@ -54,7 +54,8 @@ class CaptionDataset(Dataset):
             cap_file = img.with_suffix(".txt")
             caption = (
                 cap_file.read_text(encoding="utf-8").strip()
-                if cap_file.exists() else "photo of xiaor girl"
+                if cap_file.exists()
+                else "little_r, young east asian woman, slightly chubby, soft round face, black rectangular glasses"
             )
             self.items.append((str(img), caption))
         self.items = self.items * repeat

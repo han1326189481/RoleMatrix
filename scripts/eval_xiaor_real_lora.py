@@ -14,15 +14,27 @@ import torch
 from diffusers import StableDiffusionPipeline
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v1"
+LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v3"
 OUT_DIR = Path(r"D:\RoleMatrix\.tmp\lora_eval")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# 固定特征前缀（触发词 little_r + 签名特征：黑框矩形眼镜）
+FIXED = (
+    "little_r, young east asian woman, slightly chubby, soft round face, "
+    "baby face, black rectangular glasses, long black layered hair, "
+    "wispy bangs, fair skin"
+)
 PROMPTS = [
-    ("portrait", "photo of xiaor girl, portrait, selfie, indoor, soft natural light, looking at camera, detailed face, high quality"),
-    ("life", "photo of xiaor girl, casual daily life, cozy room background, warm lighting, realistic photo, high quality"),
+    ("portrait", f"{FIXED}, portrait, selfie, looking at camera, indoor, warm lighting, cozy bedroom, phone selfie, realistic photo"),
+    ("life", f"{FIXED}, casual daily life, cozy room, warm lighting, realistic photo"),
 ]
-NEGATIVE = "worst quality, low quality, anime, cartoon, illustration, drawing, 3d render, bad anatomy, deformed"
+NEGATIVE = (
+    "old woman, child, loli, muscular, skinny, athletic, heavy makeup, fashion model, "
+    "revealing clothes, large breasts, blonde hair, colored hair, short hair, pixie cut, "
+    "curly hair, high heels, business suit, strong expression, angry, aggressive, "
+    "sharp face, pointed chin, male, anime, cartoon, illustration, drawing, 3d render, "
+    "worst quality, low quality, bad anatomy, deformed, blurry, watermark, text"
+)
 
 
 def main() -> None:

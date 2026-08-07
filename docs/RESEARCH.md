@@ -74,6 +74,15 @@
       → 注意：训练图在 data/lora_xiaor_real/（隐私，不入库，.gitignore 已含 data/）；
         models/ 不入库（.gitignore），换机需重新训练或手动转移
       → 已知限制：眼镜特征未学全（训练图戴眼镜占比不均），可用 caption 标注强化
+- [x] 数据集 v3 修正（2026-08-07）：推翻 minicpm-v 的眼镜漏判
+      → 用户确认：正脸 5 张 + 侧脸 5 张全部戴黑框眼镜（minicpm-v 全漏判，
+        opencv haarcascade 也因分辨率低漏检；超分后正脸照2 检出眼镜→证明原图确有眼镜）
+      → v2 caption 错误（正脸没写 glasses）已纠正
+      → 数据源策略（回应"超分破坏原图"质疑）：原图≥512px 直接用原图（正脸/侧脸/生活/新3张），
+        仅全身照（256px）用超分图；新 3 张高清图（1024px+）入训练
+      → 数据集 v3：39 张（28 原图 + 11 脸部特写），含眼镜标注 28 个（v2 仅 10）
+      → 重训 v3：models/lora_xiaor_real_v3（rank 64 / 2000 steps）
+      → 生图提示词固化：docs/little_r_prompt_guide.md（触发词 little_r + 专业 negative）
 - [x] jcodemunch-mcp POC：索引 + 检索验证成功
       → rolematrix 包 322 符号索引约 0.45s；search_symbols 精确返回符号(file/line/signature)
       → 关键配置（本地已设置，换机需重配）：
