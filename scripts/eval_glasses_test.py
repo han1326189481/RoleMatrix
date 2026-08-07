@@ -17,7 +17,7 @@ import torch
 from diffusers import StableDiffusionPipeline
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v3"
+LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v4"
 OUT_DIR = Path(r"D:\RoleMatrix\.tmp\lora_eval")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 HC = Path(r"D:\RoleMatrix\.tmp\haarcascades")

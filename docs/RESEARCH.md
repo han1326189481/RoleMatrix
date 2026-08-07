@@ -93,6 +93,16 @@
       → v3 LoRA：prompt 含 glasses 时生成图戴眼镜 ✓；不含时不硬加（可控特征）
       → 残余瑕疵：镜框形状偏圆框（原图为矩形框），后续可在 caption 强化 rectangular
       → opencv haarcascade 眼镜检测器漏报+误报双高，不可作为判定依据（已弃用）
+- [x] 数据集 v4（2026-08-07）：依据专业细节差距分析修正
+      → 小R 设定确认：除洗澡/运动外永远戴黑框矩形眼镜 → 39/39 样本统一眼镜
+      → 眼镜锁定型号 black thick-rimmed rectangular glasses；发型 shaggy layered hair；
+        脸瘦 slender soft face（去 slightly chubby 防胖脸）；神态 calm cool vibe；
+        服装 white hoodie with bold black letters
+      → 重训 v4：models/lora_xiaor_real_v4（rank 64 / 2000 steps / 12.8 分钟）
+      → 评估：戴黑框眼镜 ✓（v3 细金属边→v4 黑框）；脸仍偏圆、镜框偏圆、神态偏温和
+        （细节差距需更强信号：更多轮次 / IP-Adapter 锚点 / 出图滤镜）
+      → 结论：SD1.5 的眼镜是 prompt 驱动属性，prompt 无 glasses 词则不画（正常行为），
+        标准用法 = prompt 固定带 black thick-rimmed rectangular glasses（见 prompt guide v2）
 - [x] jcodemunch-mcp POC：索引 + 检索验证成功
       → rolematrix 包 322 符号索引约 0.45s；search_symbols 精确返回符号(file/line/signature)
       → 关键配置（本地已设置，换机需重配）：
