@@ -55,8 +55,21 @@ def main() -> None:
         img.save(OUT_DIR / f"{i}_{tag}_base.png")
         print(f"[{i}] 无LoRA已保存 {tag}", flush=True)
 
-        # 有 LoRA
-        pipe.load_lora_weights(LORA_PATH)
+        # 有 LoRA（peft 手动加载：diffusers load_lora_weights 不认 peft 前缀）
+        from peft import LoraConfig, get_peft_model, set_peft_model_state_dict
+        from safetensors.torch import load_file
+
+        lora_config = LoraConfig(
+            r=64, lora_alpha=128,
+            target_modules=["to_q", "to_k", "to_v", "to_out.0"],
+            lora_dropout=0.0,
+        )
+        pipe.unet = get_peft_model(pipe.unet, lora_config)
+        sd = load_file(Path(LORA_PATH) / "adapter_model.safetensors")
+        sd = {k.replace("base_model.model.", ""): v for k, v in sd.items()}
+        set_peft_model_state_dict(pipe.unet, sd)
+        pipe.unet.eval()
+
         img2 = pipe(
             prompt=prompt, negative_prompt=NEGATIVE,
             width=512, height=512, num_inference_steps=25, guidance_scale=7.0,

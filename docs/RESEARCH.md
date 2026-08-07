@@ -83,6 +83,16 @@
       → 数据集 v3：39 张（28 原图 + 11 脸部特写），含眼镜标注 28 个（v2 仅 10）
       → 重训 v3：models/lora_xiaor_real_v3（rank 64 / 2000 steps）
       → 生图提示词固化：docs/little_r_prompt_guide.md（触发词 little_r + 专业 negative）
+- [x] 关键 bug 修复：LoRA 从未真正加载（2026-08-07）
+      → diffusers 0.39 load_lora_weights 不认 peft 保存的 base_model.model 前缀
+        （warning: No LoRA keys with prefix='unet'）——此前所有"有LoRA"评估实为 base 输出
+      → 修复：peft get_peft_model + set_peft_model_state_dict 手动注入（去前缀）
+      → 验证：有/无 LoRA 像素平均差 64.88/255（LoRA 真实生效）
+- [x] 眼镜验证结论（minicpm-v 聚焦提问）
+      → 原图确认戴黑框眼镜（用户判断正确，开放描述型提问会漏判）
+      → v3 LoRA：prompt 含 glasses 时生成图戴眼镜 ✓；不含时不硬加（可控特征）
+      → 残余瑕疵：镜框形状偏圆框（原图为矩形框），后续可在 caption 强化 rectangular
+      → opencv haarcascade 眼镜检测器漏报+误报双高，不可作为判定依据（已弃用）
 - [x] jcodemunch-mcp POC：索引 + 检索验证成功
       → rolematrix 包 322 符号索引约 0.45s；search_symbols 精确返回符号(file/line/signature)
       → 关键配置（本地已设置，换机需重配）：
