@@ -14,15 +14,15 @@ import torch
 from diffusers import StableDiffusionPipeline
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v3"
+LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v4"
 OUT_DIR = Path(r"D:\RoleMatrix\.tmp\lora_eval")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# 固定特征前缀（触发词 little_r + 签名特征：黑框矩形眼镜）
+# v4 具象特征前缀（与训练 caption 完全一致）
 FIXED = (
-    "little_r, young east asian woman, slightly chubby, soft round face, "
-    "baby face, black rectangular glasses, long black layered hair, "
-    "wispy bangs, fair skin"
+    "little_r, young east asian woman, slender soft face, soft oval face, baby face, "
+    "black thick-rimmed rectangular glasses, shaggy layered hair, wispy bangs, "
+    "fair skin, petite, calm cool vibe"
 )
 PROMPTS = [
     ("portrait", f"{FIXED}, portrait, selfie, looking at camera, indoor, warm lighting, cozy bedroom, phone selfie, realistic photo"),
