@@ -260,13 +260,14 @@ class MemoryManager:
             )
             result["daily"] = summary
 
-        # 写 long 事实（add_fact 内部去重）
+        # 写 profile 画像事实（add_fact 内部去重）
+        # consolidate 提取的是用户稳定事实（喜好/身份/日程），归入画像层
         for fact in parsed.get("facts") or []:
             fact = str(fact).strip()
             if not fact:
                 continue
             if await self.add_fact(
-                session_key, "long", fact,
+                session_key, "profile", fact,
                 metadata={"source": "consolidate", "date": today},
             ):
                 result["facts"].append(fact)

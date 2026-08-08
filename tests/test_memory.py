@@ -114,7 +114,7 @@ async def test_consolidate_fallback_when_llm_fails() -> None:
 
 
 async def test_consolidate_extracts_summary_and_facts() -> None:
-    """LLM 返回合法 JSON 时写入 daily 摘要 + long 事实。"""
+    """LLM 返回合法 JSON 时写入 daily 摘要 + profile 画像事实。"""
     mgr = _new_manager()
     await mgr.record_message(S, "user", "我今天喝了一杯超好喝的奶茶")
     provider = _FakeProvider(
@@ -125,9 +125,9 @@ async def test_consolidate_extracts_summary_and_facts() -> None:
     assert result["fallback"] is False
     assert result["daily"] == "用户今天喝了奶茶很开心"
     assert result["facts"] == ["用户喜欢喝奶茶"]
-    # 已落库
-    long_items = await mgr.query_long(S)
-    assert long_items[0]["content"] == "用户喜欢喝奶茶"
+    # 已落库（consolidate 提取的用户事实归入 profile 画像层）
+    profile_items = await mgr.query_profile(S)
+    assert profile_items[0]["content"] == "用户喜欢喝奶茶"
 
 
 async def test_consolidate_idempotent_same_day() -> None:

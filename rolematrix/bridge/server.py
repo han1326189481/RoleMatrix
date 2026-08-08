@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .. import __version__
@@ -77,6 +78,20 @@ def create_app() -> FastAPI:
         # 关闭：无需额外清理（aiosqlite 每次操作独立连接）
 
     app = FastAPI(title="RoleMatrix Bridge", version=__version__, lifespan=lifespan)
+
+    # ---- 收藏库图片静态服务（表情包/收藏图片供前端展示）----
+    # 前端用 /collection-files/<relative_path> 访问收藏库中的图片
+    try:
+        from ..config import get_settings
+        collection_root = Path(get_settings().collection.root_dir)
+        collection_root.mkdir(parents=True, exist_ok=True)
+        app.mount(
+            "/collection-files",
+            StaticFiles(directory=str(collection_root)),
+            name="collection-files",
+        )
+    except Exception as e:  # noqa: BLE001
+        log.warning("收藏库静态目录挂载失败（表情包图片将无法在前端显示）: %s", e)
 
     # ---- 简易聊天 UI ----
     app.include_router(chat_router)

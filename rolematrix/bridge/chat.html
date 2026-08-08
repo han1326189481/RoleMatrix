@@ -356,6 +356,20 @@ async function send() {
     const segs = (data.segments && data.segments.length) ? data.segments : [data.reply || ""];
     await playSegments(loading, segs);
 
+    // 表情包：大脑决策 send_meme 命中时，在文字后追加表情图片
+    const meme = data.brain_plan && data.brain_plan._meme;
+    if (meme && meme.file_path) {
+      const rel = String(meme.file_path).replace(/\\/g, "/");
+      const memeBubble = document.createElement("div");
+      memeBubble.className = "bubble meme-bubble";
+      const memeImg = document.createElement("img");
+      memeImg.src = API + "/collection-files/" + rel;
+      memeImg.alt = "表情包";
+      memeBubble.appendChild(memeImg);
+      loading.appendChild(memeBubble);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
     renderEmotion(data.emotion);
     status.textContent = `${data.persona.name || "AI"} · ${data.model_used} · ${data.duration_ms}ms`;
     messages.scrollTop = messages.scrollHeight;

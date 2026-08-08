@@ -192,6 +192,16 @@ async def chat(req: ChatRequest) -> ChatResponse:
     rt.emotion.apply_event(session, {"want_chat": -20, "happy": 5})
     await rt.persist_emotion(session)
 
+    # 记忆接通：把用户消息写入 session 层记忆（事件总线订阅者消费）
+    from ..eventbus import Event, bus
+    await bus.publish(
+        Event("message.received", {
+            "session_key": session,
+            "prompt": req.message or "[图片]",
+            "channel": "webchat",
+        })
+    )
+
     persona_block = persona.to_prompt_block()
     emotion_block = rt.emotion.to_prompt_context(session)
     system_prompt = f"{persona_block}\n\n{emotion_block}"
@@ -309,6 +319,16 @@ async def chat(req: ChatRequest) -> ChatResponse:
 
     elapsed = int((time.time() - t0) * 1000)
     segments = split_reply(reply)
+
+    # 记忆接通：把回复写入 session 层记忆（供当日 consolidate 摘要）
+    await bus.publish(
+        Event("message.sent", {
+            "session_key": session,
+            "assistant_texts": segments,
+            "model": model,
+        })
+    )
+
     log.info("chat 完成 session=%s mode=%s provider=%s model=%s reply=%d字 切分=%d段 耗时=%dms",
              session, mode, provider_name, model, len(reply), len(segments), elapsed)
 
