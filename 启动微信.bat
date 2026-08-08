@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+setlocal EnableDelayedExpansion
 title RoleMatrix 微信接入启动器
 cd /d D:\RoleMatrix
 
@@ -27,13 +28,33 @@ echo [2/3] 启动 OpenClaw Gateway ...
 start "OpenClaw-Gateway" cmd /k "tools\node-v22.23.2-win-x64\node.exe tools\node-v22.23.2-win-x64\node_modules\openclaw\openclaw.mjs gateway"
 timeout /t 10 /nobreak >nul
 
-REM 3. 微信登录：独立窗口显示二维码
-echo [3/3] 打开【微信扫码】窗口 ...
-echo       请用【平板上的微信小号】扫描二维码
-echo       如果二维码显示异常，把窗口里的 https://liteapp.weixin.qq.com/... 链接
-echo       发到手机上打开，也可以扫码
+REM 3. 微信登录：提取登录链接，用浏览器打开标准二维码
+echo [3/3] 正在获取微信登录二维码 ...
+echo       浏览器会自动打开二维码页面，用【平板上的微信小号】扫码
 timeout /t 3 /nobreak >nul
-start "微信扫码" cmd /k "tools\node-v22.23.2-win-x64\node.exe tools\node-v22.23.2-win-x64\node_modules\openclaw\openclaw.mjs channels login --channel openclaw-weixin"
+set "WX_LOGIN_LOG=%TEMP%\wx_login_output.txt"
+REM 后台启动 login（阻塞等待扫码），先把登录链接写到文件
+start /b "" tools\node-v22.23.2-win-x64\node.exe tools\node-v22.23.2-win-x64\node_modules\openclaw\openclaw.mjs channels login --channel openclaw-weixin > "%WX_LOGIN_LOG%" 2>&1
+REM 等 login 输出登录链接
+timeout /t 8 /nobreak >nul
+REM 从 login 输出中提取 liteapp 登录链接
+set "WX_URL="
+for /f "usebackq tokens=*" %%i in (`findstr /R "https://liteapp.weixin.qq.com/q/" "%WX_LOGIN_LOG%"`) do set "WX_URL=%%i"
+if defined WX_URL (
+  start "" "!WX_URL!"
+  echo       已打开二维码页面（如果没弹出，手动复制这行到浏览器）：
+  echo       !WX_URL!
+) else (
+  echo       未能自动提取登录链接，正在等 login 输出 ... 请稍候
+  timeout /t 10 /nobreak >nul
+  for /f "usebackq tokens=*" %%i in (`findstr /R "https://liteapp.weixin.qq.com/q/" "%WX_LOGIN_LOG%"`) do set "WX_URL=%%i"
+  if defined WX_URL (
+    start "" "!WX_URL!"
+    echo       已打开二维码页面：!WX_URL!
+  ) else (
+    echo       仍未提取到链接，请打开文件 %WX_LOGIN_LOG% 查看二维码/链接
+  )
+)
 
 echo.
 echo 扫码完成后：
