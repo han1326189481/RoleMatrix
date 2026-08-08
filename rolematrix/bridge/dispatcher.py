@@ -288,11 +288,30 @@ async def handle_before_agent_reply(req: HookRequest) -> dict:
             len([s for s in reply.split("\n\n") if s.strip()]),
         )
 
+    # 兜底分段：LLM 常用单个 \n 而非空行 \n\n 分段。
+    # TS 侧 splitReplySegments 只按空行拆分，单换行会导致两句话合并成一条消息。
+    # 统一把"没有空行分段但存在单换行"的回复提升为空行分段。
+    if "\n" in reply and "\n\n" not in reply:
+        segment_count = len([s for s in reply.split("\n") if s.strip()])
+        reply = reply.replace("\n", "\n\n")
+        log.info(
+            "兜底分段：单换行提升为空行（%d 段）", segment_count,
+        )
+
     # 更新历史
     history.append({"role": "user", "content": user_msg})
     history.append({"role": "assistant", "content": reply})
     if len(history) > 20:
         _histories[session] = history[-20:]
+
+    # 写入四层记忆（session 层：用户消息 + 小R 回复）
+    try:
+        from ..memory import get_memory_manager
+        mm = get_memory_manager()
+        await mm.record_message(session, "user", user_msg)
+        await mm.record_message(session, "assistant", reply)
+    except Exception as e:  # noqa: BLE001
+        log.warning("before_agent_reply 记忆写入失败 session=%s: %s", session, e)
 
     # 详细日志：打印 reply 的 repr 以便看到换行符真实形式
     segments = [s for s in reply.split("\n\n") if s.strip()]
