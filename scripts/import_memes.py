@@ -25,17 +25,47 @@ log = get_logger("tools.import_memes")
 
 ALLOWED = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
+# 文件名关键词 -> 补充情绪标签（供大脑 send_meme 按情绪命中，如"开心/撒娇/可爱"）
+EMOTION_HINTS: dict[str, list[str]] = {
+    "馋": ["馋", "想吃", "可爱", "开心"],
+    "不屑": ["不屑", "傲娇"],
+    "反对": ["反对", "拒绝"],
+    "吐槽": ["吐槽", "无语"],
+    "思考": ["思考", "疑惑"],
+    "嫌弃": ["嫌弃", "无语"],
+    "惊讶": ["惊讶", "震惊", "可爱"],
+    "搞怪": ["搞怪", "调皮", "开心"],
+    "求饶": ["求饶", "撒娇"],
+    "质疑": ["质疑", "疑惑"],
+    "开心": ["开心", "高兴"],
+    "可爱": ["可爱"],
+    "撒娇": ["撒娇"],
+    "害羞": ["害羞"],
+}
+
+
+def _emotion_tags(name: str) -> list[str]:
+    """按文件名关键词补充情绪标签。"""
+    tags: list[str] = []
+    for kw, emo in EMOTION_HINTS.items():
+        if kw in name:
+            for t in emo:
+                if t not in tags:
+                    tags.append(t)
+    return tags
+
 
 async def import_dir(root: Path) -> int:
     await init_collection_db()
     total = 0
     for img in sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in ALLOWED):
-        # 标签：子目录名优先，否则文件名（去扩展名）
+        # 标签：子目录名优先，否则文件名（去扩展名）；再补充情绪标签
         if img.parent != root:
             tag = img.parent.name
         else:
             tag = img.stem
-        tags = [tag] if tag and tag != img.stem else ([img.stem] if img.stem else [])
+        tags = [tag] if tag else []
+        tags += _emotion_tags(img.stem)
         try:
             result = await save_local_file(
                 src_path=str(img),
