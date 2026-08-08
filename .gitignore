@@ -45,3 +45,7 @@ reasonix.toml
 # 真人形象照（隐私，严禁入库）
 training basic/
 training basic_upscaled/
+
+# 生图输出（不入库）
+outputs/
+
