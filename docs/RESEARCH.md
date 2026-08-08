@@ -114,6 +114,14 @@
       → 侧脸样图：.tmp/xiaor_samples_v5_side/（抓娃娃机/火车窗边场景）
       → 教训（v5 prompt 修正）：绝不能删 east asian 人种词、不能加 sharp/detailed 类欧美脸词；
         v6 修正=保留 east asian + 年龄锚定 + caucasian negative，已验证不欧美化
+- [x] P0 验证（2026-08-08）：CLIP 77 token 截断是身份特征丢失的关键原因
+      → 精简 Identity Tokens prompt（64/60 token ≤77）vs v7 超长版（102 token 被截断）
+      → 结果（minicpm-v 检查）：眼镜 细边圆框→粗黑框矩形✓；正脸 圆润饱满✓、下垂慵懒眼✓；
+        小痣 仍缺失✗（训练时没学到，v7 caption 超长被截断+权重不足）；侧脸仍窄脸/AI眼
+      → 结论：① token 截断假设成立，精简 prompt 能救回眼镜/圆脸/下垂眼；
+        ② 小痣必须靠 v8 重训（训练 caption 必须 ≤77 token）；
+        ③ v7 LoRA 有身份基础但未锁死，侧脸/微胖信号不足
+      → 生成 prompt 分层原则：身份特征 ≤60 token + 风格词（realistic/photo）用剩余预算
 - [x] jcodemunch-mcp POC：索引 + 检索验证成功
       → rolematrix 包 322 符号索引约 0.45s；search_symbols 精确返回符号(file/line/signature)
       → 关键配置（本地已设置，换机需重配）：
