@@ -17,13 +17,14 @@ from peft import LoraConfig, get_peft_model, set_peft_model_state_dict
 from safetensors.torch import load_file
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v6"
-OUT_DIR = Path(r"D:\RoleMatrix\.tmp\xiaor_samples_v6")
+LORA_PATH = r"D:\RoleMatrix\models\lora_xiaor_real_v7"
+OUT_DIR = Path(r"D:\RoleMatrix\.tmp\xiaor_samples_v7")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 FIXED = (
-    "little_r, 1girl, solo, young asian woman, 20 years old, slender soft face, "
-    "soft oval face, black long hair, messy bangs, wispy bangs, tousled hair, "
+    "little_r, 1girl, solo, young asian woman, 20 years old, beautiful, pretty, "
+    "delicate features, clean skin, slender soft face, soft oval face, "
+    "black long hair, messy bangs, wispy bangs, tousled hair, "
     "black thick rectangular glasses, pale skin, soft blush, pink lips, light makeup, "
     "beauty mark under left eye"
 )
@@ -32,14 +33,16 @@ NEGATIVE = (
     "baby face, muscular, skinny, heavy makeup, blonde hair, colored hair, short hair, "
     "pixie cut, curly hair, high heels, business suit, strong expression, angry, "
     "aggressive, sharp face, pointed chin, male, caucasian, western face, "
+    "looking at viewer, eye contact, staring at camera, "
     "anime, cartoon, illustration, drawing, 3d render, worst quality, low quality, "
     "bad anatomy, deformed, distorted face, blurry, watermark, text"
 )
 
 SCENES = [
     ("正脸", f"{FIXED}, front view, looking at viewer, hand on cheek, white oversized hoodie, indoor, shelf, plushies, warm lighting, realistic", 512, 512),
-    ("侧脸_图书馆", f"{FIXED}, side profile, looking down, reading, library, bookshelf, bright soft lighting, quiet atmosphere, realistic", 512, 512),
-    ("侧脸_娃娃机", f"{FIXED}, side profile, night street, illuminated display case, neon lights, cool and warm light, pensive, realistic", 512, 512),
+    ("侧脸_图书馆", f"{FIXED}, side profile, looking down at book, reading, library, bookshelf, bright soft lighting, quiet atmosphere, realistic", 512, 512),
+    ("侧脸_娃娃机", f"{FIXED}, side profile, looking away, gazing at display case, night street, illuminated display case, neon lights, cool and warm light, pensive, realistic", 512, 512),
+    ("侧脸_火车窗", f"{FIXED}, side profile, looking out window, hand on chin, bus window, daytime, natural light, realistic", 512, 512),
     ("全身_校园", f"{FIXED}, full body, standing, hands in pockets, cream white hoodie with black text, black pleated mini skirt, white mid-calf socks, white chunky sneakers, black shoulder bag, outdoors, campus, sunny, dappled sunlight, tree shadows, realistic", 448, 672),
 ]
 SEEDS = [2026, 777]

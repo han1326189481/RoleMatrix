@@ -31,17 +31,17 @@ from rolematrix.logger import get_logger, setup_logging
 log = get_logger("train.xiaor_real")
 
 BASE_MODEL = r"D:\RoleMatrix\models\base\RealisticVision_V5.1"
-IMAGE_DIR = Path(r"D:\RoleMatrix\data\lora_xiaor_real_v6\img")
-OUTPUT_DIR = Path(r"D:\RoleMatrix\models\lora_xiaor_real_v6")
+IMAGE_DIR = Path(r"D:\RoleMatrix\data\lora_xiaor_real_v7\img")
+OUTPUT_DIR = Path(r"D:\RoleMatrix\models\lora_xiaor_real_v7")
 RESOLUTION = 512
 LORA_RANK = 64
 LORA_ALPHA = 128
 LEARNING_RATE = 1e-4
 BATCH_SIZE = 1
 GRAD_ACCUM = 4
-TOTAL_STEPS = 3400
+TOTAL_STEPS = 3300
 WARMUP_STEPS = 200
-REPEAT_PER_IMAGE = 30  # 38 张 × 30 = 1140/epoch，约 3 epoch = 3420 steps（上限 3400）
+REPEAT_PER_IMAGE = 30  # 36 张 × 30 = 1080/epoch，约 3 epoch = 3240 steps（上限 3300）
 SEED = 42
 
 
