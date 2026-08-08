@@ -20,6 +20,9 @@ echo.
 
 REM 1. 启动 RoleMatrix 核心服务（识图/记忆/表情包/大脑）
 echo [1/3] 启动 RoleMatrix 核心服务 (127.0.0.1:8765) ...
+REM 从 openclaw.json 读取 DeepSeek key 注入环境变量（小R 嘴巴需要）
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "(Get-Content .openclaw\openclaw.json -Raw | ConvertFrom-Json).env.DEEPSEEK_API_KEY"`) do set "DEEPSEEK_API_KEY=%%i"
+if not defined DEEPSEEK_API_KEY set "DEEPSEEK_API_KEY="
 start "RoleMatrix-Server" cmd /k ".venv\Scripts\python.exe -m uvicorn rolematrix.bridge.server:create_app --factory --host 127.0.0.1 --port 8765"
 timeout /t 12 /nobreak >nul
 
