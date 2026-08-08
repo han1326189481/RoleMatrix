@@ -105,17 +105,20 @@ def encode_prompt(tokenizer, text_encoder, prompt: str, max_len: int = 77, chunk
 
 
 # ============================================================
-# 模型加载（LoRA v7 + Realistic Vision）
+# 模型加载（Realistic Vision 基模 + 可选 LoRA）
+# lora_path=None 时不加载任何 LoRA（通用生图）
 # ============================================================
-def load_pipeline() -> StableDiffusionPipeline:
+def load_pipeline(lora_path: str | None = LORA_PATH) -> StableDiffusionPipeline:
     pipe = StableDiffusionPipeline.from_pretrained(
         BASE_MODEL, torch_dtype=torch.float16, safety_checker=None, local_files_only=True,
     ).to("cuda")
+    if lora_path is None:
+        return pipe
     cfg = LoraConfig(
         r=64, lora_alpha=128, target_modules=["to_q", "to_k", "to_v", "to_out.0"], lora_dropout=0.0,
     )
     pipe.unet = get_peft_model(pipe.unet, cfg)
-    sd = load_file(Path(LORA_PATH) / "adapter_model.safetensors")
+    sd = load_file(Path(lora_path) / "adapter_model.safetensors")
     sd = {k.replace("base_model.model.", ""): v for k, v in sd.items()}
     set_peft_model_state_dict(pipe.unet, sd)
     pipe.unet.eval()
@@ -148,6 +151,25 @@ def sample(
 
 
 # ============================================================
+# 中文 → 英文 tag 翻译（本地 Ollama qwen2.5:7b，供 --zh 使用）
+# ============================================================
+def translate_zh_to_tags(zh: str, model: str = "qwen2.5:7b") -> str:
+    sys_prompt = (
+        "你是 Stable Diffusion 的 prompt 翻译器。把用户的中文描述转换成英文 tag 列表，"
+        "逗号分隔，摄影写实风格，不要解释不要多余文字，直接输出 tags。"
+    )
+    with httpx.Client(timeout=120) as c:
+        r = c.post(
+            "http://127.0.0.1:11434/api/generate",
+            json={"model": model, "prompt": sys_prompt + "\n中文：" + zh, "stream": False},
+        )
+    tags = r.json().get("response", "").strip()
+    # 清理可能的引号/多余换行
+    tags = tags.replace("\"", "").replace("\n", ", ")
+    return tags.strip(" ,")
+
+
+# ============================================================
 # 评审（调用本地 Ollama qwen2.5vl）
 # ============================================================
 def judge_image(model: str, img_path: Path) -> dict:
@@ -177,7 +199,12 @@ def main() -> int:
     ap.add_argument("--size", type=int, default=768)
     ap.add_argument("--steps", type=int, default=30)
     ap.add_argument("--cfg", type=float, default=7.5)
-    ap.add_argument("--prompt", type=str, default="", help="自定义 prompt（默认小R 模板）")
+    ap.add_argument("--prompt", type=str, default="", help="自定义完整 prompt（必须英文 tag；覆盖小R 模板）")
+    ap.add_argument("--zh", type=str, default="", help="中文描述，自动翻译成英文 tag 后生成（优先于 --prompt）")
+    ap.add_argument("--translate-model", default="qwen2.5:7b", help="中文翻译用的本地模型")
+    ap.add_argument("--extra", type=str, default="", help="在基础 prompt 后追加场景（英文 tag，如 'eating noodles'）")
+    ap.add_argument("--no-lora", action="store_true", help="不加载小R LoRA，用纯 base 模型通用生图")
+    ap.add_argument("--lora", type=str, default="", help="指定其他 LoRA 目录（默认 models\\lora_xiaor_real_v7）")
     ap.add_argument("--no-weight", action="store_true", help="关闭关键特征加权")
     ap.add_argument("--pick", action="store_true", help="生成后自动评审选优")
     ap.add_argument("--judge-model", default="qwen2.5vl:7b")
@@ -187,9 +214,19 @@ def main() -> int:
     out_dir = Path(args.out) if args.out else DEFAULT_OUT / f"xiaor_{datetime.now():%Y%m%d_%H%M%S}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # prompt 组装
-    prompt = args.prompt or XIAOR_PROMPT
-    if not args.no_weight:
+    # prompt 组装优先级：--zh（翻译）> --prompt > 小R 模板；--extra 一律追加
+    if args.zh:
+        print(f"[翻译] 中文 -> tags（{args.translate_model}）...", flush=True)
+        base = translate_zh_to_tags(args.zh, args.translate_model)
+        print(f"[翻译结果] {base}", flush=True)
+    else:
+        base = args.prompt or XIAOR_PROMPT
+    if args.extra:
+        base = base + ", " + args.extra
+    # 加权只在小R 模板/自定义无 --no-weight 时生效（通用生图默认不加权）
+    prompt = base
+    use_lora = not args.no_lora
+    if use_lora and not args.no_weight:
         prompt = prompt + ", " + ", ".join(KEY_FEATURES * 2)
         print(f"[prompt] 已加权关键特征（眼镜/眼睛/小痣 x2），总 token 约 {len(prompt.split(','))}", flush=True)
 
@@ -197,8 +234,10 @@ def main() -> int:
     seeds = [int(s) for s in args.seed_list.split(",") if s.strip()] if args.seed_list else list(range(1, args.seeds + 1))
 
     t0 = time.time()
-    print(f"[加载] 基模 + LoRA v7 ...", flush=True)
-    pipe = load_pipeline()
+    lora_dir = None if use_lora is False else (args.lora or LORA_PATH)
+    tag = "无 LoRA（通用）" if lora_dir is None else f"LoRA {Path(lora_dir).name}"
+    print(f"[加载] 基模 + {tag} ...", flush=True)
+    pipe = load_pipeline(lora_dir)
     neg = encode_prompt(pipe.tokenizer, pipe.text_encoder, NEGATIVE)
     pos = encode_prompt(pipe.tokenizer, pipe.text_encoder, prompt)
     print(f"[加载完成] {time.time()-t0:.1f}s，prompt {pos.shape[1]} tokens", flush=True)
